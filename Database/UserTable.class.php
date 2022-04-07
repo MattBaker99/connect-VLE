@@ -1,5 +1,4 @@
 <?php
-
   class Users extends Database
   {
     private static $tableName = "Users";
@@ -39,6 +38,5 @@
         "SELECT * FROM " . self::$tableName . " WHERE userID=?;", 
         [$id]);
     }
-
   }
 ?>
