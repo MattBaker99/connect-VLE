@@ -8,7 +8,7 @@
 </head>
 <body>
   <main>
-    <button onclick="somefunc()"></button>
+    <button onclick="test()"></button>
   </main>
 </body>
 </html>
@@ -17,3 +17,5 @@ test test test test
   body {}
   main {}
 </style>
+<script>
+</script>
