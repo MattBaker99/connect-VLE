@@ -1,105 +1,108 @@
 <?php 
 class Model extends Database
 {
-  // NEEDS WORK ->> TESTING
-  public static function set(array $data = null, string $tablename)
+  protected static function set(string $tablename, array $data)
   {
-    if ($data)
-    {
-      $columns = "";
-      $temp = "";
-      foreach ($data as $key => $value)
-      {
-        $columns .= $key . ", ";
-        $temp .= "?, ";  
-      }
+    $pStmt = self::generatePreparedStatement("SET", $tablename, $data);
+    return self::query($pStmt["sql"], $pStmt["values"]);
+  }
 
-      $columns = substr($columns, 0, -2);
-      $temp = substr($temp, 0, -2);
-    
-      self::query("INSERT INTO " . $tablename . "($columns) VALUES ($temp);", $data);
-    }
-    else
-    {
-      return false;
+  protected static function get(string $tablename, array $identifiers = [])
+  {
+    $pStmt = self::generatePreparedStatement("GET", $tablename, $identifiers);
+    return self::query($pStmt["sql"], $pStmt["values"]);
+  }
+
+  protected static function update(string $tablename, array $identifiers, array $data)
+  {
+    $pStmt = self::generatePreparedStatement("UPDATE", $tablename, $identifiers, $data);
+    return self::query($pStmt["sql"], $pStmt["values"]);
+    // print_r($pStmt);
+  }
+
+  protected static function del(string $tablename, array $identifiers = [])
+  {
+    $pStmt = self::generatePreparedStatement("DELETE", $tablename, $identifiers);
+    return self::query($pStmt["sql"], $pStmt["values"]);
+    // print_r($pStmt);
+  }
+
+  // Generates an SQL string based on operation
+  // Returns SQL and Values to replace prepared statement "slots"
+  private static function generatePreparedStatement(string $method, string $tablename, array $identifiers = [], array $data = [])
+  {
+    switch ($method) {
+      case 'GET':
+        $sql = "SELECT * FROM " . $tablename;
+        if ($identifiers)
+        {
+          $preparedWhere = self::generatePreparedSection($identifiers);
+
+          return ["sql" => $sql . " WHERE " . $preparedWhere["sql"] . ";" , "values" => $preparedWhere["values"]];
+        }
+        else
+        {
+          return ["sql" => $sql . ";" , "values" => []];
+        } 
+        break;
+      case 'SET':
+        $sql = "INSERT INTO " . $tablename;
+        $columns = "";
+        $blank_vals = "";
+        $vals = array();
+
+        foreach($identifiers as $key=>$value)
+        {
+          $columns .= $key . ", ";
+          $blank_vals .= "?, ";
+          $vals[] = $value;
+        }
+        $columns = substr($columns, 0, -2);
+        $blank_vals = substr($blank_vals, 0, -2);
+        return ["sql"=> $sql . " ($columns) VALUES ($blank_vals);", "values"=>$vals];
+        break;
+      case 'UPDATE':
+        $sql = "UPDATE " . $tablename . " SET ";
+        $preparedSet = self::generatePreparedSection($data);
+        $preparedWhere = self::generatePreparedSection($identifiers);
+
+        return ["sql"=> $sql . $preparedSet["sql"] . " WHERE " . $preparedWhere["sql"] . ";" , "values"=>array_merge($preparedSet["values"], $preparedWhere["values"])];
+        break;
+      case 'DELETE':
+        $sql = "DELETE FROM " . $tablename;
+        if ($identifiers)
+        {
+          $preparedWhere = self::generatePreparedSection($identifiers);
+
+          return ["sql"=>$sql . " WHERE " . $preparedWhere["sql"] . ";" , "values"=>$preparedWhere["values"]];
+        }
+        else
+        {
+          return ["sql" => $sql . ";" , "values" => NULL];
+        }
+        break;
+      default:
+        return false;
+        break;
     }
   }
 
-  // DONE
-  public static function get(array $identifiers = null, string $tablename)
+  // Generate a prepared string and seperates the replacement values
+  // Prepared string is in the form of : "$key = ?, ..."
+  // Returns String and Values for that prepared String.
+  private static function generatePreparedSection(array $data)
   {
-    if ($identifiers)
-    {
-      $tempData = self::formPreparedStatement($identifiers);
-      return self::query("SELECT * FROM " . $tablename . " WHERE " . $tempData["sql"], $tempData["values"]);
-    }
-    else
-    {
-      $sql = "SELECT * FROM " . $tablename . ";";
-      return self::query($sql, []);
-    }
-  }
-
-  // NEEDS WORK ->> TESTING
-  public static function update(array $identifiers = null, array $data, string $tablename)
-  {
-    // Identifiers can only be used in the "WHERE" section
-    // Data can only be used in the "SET" section
-
-    if($identifiers)
-    {
-      $whereData = self::formPreparedStatement($identifiers);
-      $setData = self::formPreparedStatement($data);
-
-      return self::query(
-        "UPDATE " . $tablename . " SET " . $setData["sql"] . " WHERE " . $whereData["sql"] . ";",
-        array_merge($setData["values"], $whereData["values"])
-      );
-      // Update $tablename SET column=? ... WHERE column=?;
-    }
-    else
-    {
-      return false;
-    }
-  }
-
-  // DONE
-  public static function del(array $identifiers = null, string $tablename)
-  {
-    if($identifiers)
-    {
-      $tempData = self::formPreparedStatement($identifiers);
-      return self::query("DELETE FROM " . $tablename . " WHERE " . $tempData["sql"], $tempData["values"]);
-    }
-    else
-    {
-      // Commented out because scary : deletes all records
-      // return self::query("DELETE FROM " . self::$tablename, []);
-      return false;
-    }
-  }
-
-  private static function formPreparedStatement(array $identifiers)
-  {  
-    // Creates $temp string for prepared statement to represent "column=?".
     $temp = "";
-    foreach($identifiers as $key => $value)
+    $temp_array = array();
+    foreach($data as $key=>$value)
     {
-      $temp .= $key . "=?,";
+      $temp .= $key . "= ?, ";
+      $temp_array[] = $value;
     }
 
-    // Trim end of string to remove extra "," and place ";" at end. Adds $temp string to end of $sql string.
-    $temp = substr($temp, 0, -1);
-    $temp .= ";";
+    $temp = substr($temp, 0, -2);
 
-    // Forms all indentifier values into array for prepared statement
-    $values = array();
-    foreach($identifiers as $value)
-    {
-      $values[] = $value;
-    }
-
-    return ["sql" => $temp, "values" => $values];
+    return ["sql" => $temp, "values" => $temp_array];
   }
 }
 ?>

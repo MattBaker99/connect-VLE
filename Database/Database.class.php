@@ -6,7 +6,7 @@
     public static $password = "root";
     public static $dbname = "connectVLE";
     
-    protected static function query(string $sql, array $args)
+    protected static function query(string $sql, array $args = [])
     {
       $stmt = self::connect()->prepare($sql);
 
@@ -28,6 +28,5 @@
       $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
       return $pdo;
     }
-    
   }
 ?>
