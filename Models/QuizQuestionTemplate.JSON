@@ -1,0 +1,15 @@
+{
+  "QUIZID" : 0,
+  "QUIZDATA" : [
+    {
+      "TYPE" : "MULTIPLE_CHOICE",
+      "QUESTION_TEXT" : "", 
+      "ANWSERS" : [
+        {"TEXT" : "testText01", "MARKS" : 10},
+        {"TEXT" : "testText02", "MARKS" : 10},
+        {"TEXT" : "", "MARKS" : 10},
+        {"TEXT" : "", "MARKS" : 10}
+      ]
+    }
+  ]
+}

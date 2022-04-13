@@ -71,9 +71,17 @@ class UserService extends Model
         break;
     }
 
-    $eID = self::get($tablename, $identifiers)["employeeID"];
-
-    return self::set($table, ["employeeID"=>$eID]);
+    if(array_keys($identifiers)[0] == "userID")
+    {
+      $eID = self::get($tablename, $identifiers)[0]["employeeID"];
+      return self::set($table, ["employeeID"=>$eID]);
+    }
+    else
+    {
+      $uID = self::getUserID($tablename, $identifiers);
+      $eID = self::get("employees", ["userID"=>$uID])[0]["employeeID"];
+      return self::set($table, ["employeeID"=>$eID]);
+    }
   }
 }
 

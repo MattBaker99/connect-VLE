@@ -88,6 +88,7 @@ class Model extends Database
   }
 
   // Generate a prepared string and seperates the replacement values
+  // $data should be in the form ["columnName"=>Value, ...]
   // Prepared string is in the form of : "$key = ?, ..."
   // Returns String and Values for that prepared String.
   private static function generatePreparedSection(array $data)
