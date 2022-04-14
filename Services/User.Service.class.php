@@ -2,85 +2,95 @@
 
 class UserService extends Model
 {
+  private static $tableName = "users";
 
-  public static function getUserID(string $tablename, array $identifiers)
+  public static function getUser(string $where = "", array $whereValues = [])
   {
-      if(array_keys($identifiers)[0] == "tutorID")
+    return self::get(self::$tableName, $where, $whereValues);
+  }
+
+  public static function updateUser(string $where, array $whereValues, array $setData)
+  {
+    return self::update(self::$tableName, $where, $whereValues, $setData);
+  }
+  
+  public static function deleteUser(string $where = "", array $whereValues = [])
+  {
+    return self::delete(self::$tableName, $where, $whereValues);
+  }
+
+  public static function signup(array $formData)
+  {
+    $results = self::getUser("email=?", [$formData["email"]]);
+
+    if (isset($results[0]))
+    {
+      return false;
+    }
+    else
+    {
+      $formData["password"] = password_hash($formData["password"], PASSWORD_DEFAULT);
+      return self::set(self::$tableName, $formData);
+    }
+  }
+
+  public static function login(array $formData)
+  {
+    $results = self::getUser("email=?", [$formData["email"]]);
+
+    if(isset($results[0]))
+    {
+      if(password_verify($formData["password"], $results[0]["password"]))
       {
-        $eID = self::get($tablename, $identifiers)["employeeID"];
-        return self::get("employees", ["employeeID"=>$eID])["userID"];
+        $_SESSION["USER_EMAIL"] = $results[0]["email"];
+        $_SESSION["USER_TYPE"] = $results[0]["type"];
+        $_SESSION["USER_ID"] = $results[0]["userID"];
+        return true;
       }
       else
       {
-        $data = self::get($tablename, $identifiers); 
-        return $data[0]["userID"];
+        return false;
       }
+    }
+    else
+    {
+      return false;
+    }
   }
 
-  public static function setUser(
-    string $type, 
-    string $email, 
-    string $password, 
-    int $status, 
-    string $personalData, 
-    string $metaData)
+  public static function enroll(int $userID, int $courseID, string $status = "", string $metaData = "")
+  {
+    $userData = self::getUser("userID=?", [$userID]);
+
+    $type = $userData[0]["type"];
+
+    return self::set("enrollments", ["courseID"=>$courseID, "userID"=>$userID, "status"=>$status, "type"=>$type, "metaData"=>$metaData]);
+  }
+
+  public static function unenroll(int $userID, int $courseID)
+  {
+    return self::delete("enrollments", "userID=? AND courseID=?", [$userID, $courseID]);
+  }
+
+  public static function setUserType(string $where, array $whereVals, array $optionalData = [])
+  {
+    $userData = self::getUser($where, $whereVals);
+
+    if (!isset($userData[0]) || !isset($userData[0]["type"]))
     {
-      return self::set("users", 
-      [
-        "type"=>$type, 
-        "email"=>$email, 
-        "password"=>password_hash($password, PASSWORD_DEFAULT), 
-        "status"=>$status, 
-        "personalData"=>$personalData, 
-        "metaData"=>$metaData
-      ]);
+      return false;
     }
 
-  public static function setUserType(string $type, array $identifiers, string $tablename)
-  {
-    $table = $type == "STUDENT" ? "students" : "employees";
-
-    echo $uID = self::getUserID($tablename, $identifiers);
-
-    return self::set($table, ["userID"=>$uID]);
-  }
-
-  public static function getUser(array $identifiers = [])
-  {
-    return self::get("users", $identifiers);
-  }
-
-  public static function updateUser(array $identifiers, array $data)
-  {
-    return self::update("users", $identifiers, $data);
-  }
-
-  public static function deleteUser(array $identifiers = [])
-  {
-    return self::del("users", $identifiers);
-  }
-
-  public static function setEmployeeType(string $type, array $identifiers, string $tablename)
-  {
-    switch ($type) {
-      case 'TUTOR':
-        $table = "tutors";
+    switch ($userData[0]["type"]) {
+      case 'STUDENT':
+        return self::set("students", ["userID"=>$userData[0]["userID"]]);
+        break;
+      case 'EMPLOYEE':
+        return self::set("employees", ["userID"=>$userData[0]["userID"], json_encode($optionalData)]);
         break;
       default:
         return false;
         break;
-    }
-
-    if(array_keys($identifiers)[0] == "userID")
-    {
-      $eID = self::get($tablename, $identifiers)[0]["employeeID"];
-      return self::set($table, ["employeeID"=>$eID]);
-    }
-    else
-    {
-      $uID = self::getUserID($tablename, $identifiers);
-      $eID = self::get("employees", ["userID"=>$uID])[0]["employeeID"];
-      return self::set($table, ["employeeID"=>$eID]);
     }
   }
 }

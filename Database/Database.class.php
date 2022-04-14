@@ -8,16 +8,24 @@
     
     protected static function query(string $sql, array $args = [])
     {
-      $stmt = self::connect()->prepare($sql);
-
-      if (explode(" ", $sql)[0] == "SELECT")
-      {
-        $stmt->execute($args);
-        return $stmt->fetchAll();
-      }
-      else
-      {
-        return $stmt->execute($args);
+      try {
+        $stmt = self::connect()->prepare($sql);
+  
+        if (explode(" ", $sql)[0] == "SELECT")
+        {
+          $stmt->execute($args);
+          return $stmt->fetchAll();
+        }
+        else
+        {
+          return $stmt->execute($args);
+        }
+      } catch (PDOException $e) {
+        echo($e->getMessage());
+        echo("<br>");
+        echo($sql);
+        echo("<br>");
+        print_r($args);
       }
     }
     

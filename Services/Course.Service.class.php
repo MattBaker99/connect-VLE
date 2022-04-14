@@ -2,38 +2,26 @@
 
 class CourseService extends Model 
 {
-  public static function getCourse(array $identifiers = [])
+  private static $tableName = "courses";
+
+  public static function createCourse(array $setData)
   {
-    return self::get("courses", $identifiers);
+    return self::set(self::$tableName, $setData);
   }
 
-  public static function setCourse(
-    string $courseTitle,
-    string $subject,
-    string $description,
-    int $length,
-    bool $status,
-    int $year,
-    $dateStart,
-    $dateEnd,
-    string $additionalMetaData
-  )
+  public static function updateCourse(string $whereCondition = "", array $whereValues = [], array $setData)
   {
-    return self::set("courses", 
-    [
-      "courseTitle" => $courseTitle,
-      "subject" => $subject,
-      "description" => $description,
-      "length" => $length,
-      "status" => (int) $status,
-      "year" => $year,
-      "dateStart" => $dateStart,
-      "dateEnd" => $dateEnd,
-      "additionalMetaData" => $additionalMetaData
-    ]
-  );
+    return self::update(self::$tableName, $whereCondition, $whereValues, $setData);
   }
 
-  
+  public static function getCourse(string $whereCondition = "", array $whereValues = [])
+  {
+    return self::get(self::$tableName, $whereCondition, $whereValues);
+  }
+
+  public static function deleteCourse(string $whereCondition = "", array $whereValues)
+  {
+    return self::delete(self::$tableName, $whereCondition, $whereValues);
+  }
 }
 ?>
